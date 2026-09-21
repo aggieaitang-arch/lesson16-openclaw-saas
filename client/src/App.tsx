@@ -33,6 +33,8 @@ type AgentResponse = {
   status?: string;
   reply?: string;
   error?: string;
+  plan_id?: string;
+  usage?: { used: number; limit: number };
 };
 
 type Project = {
@@ -89,6 +91,8 @@ function App() {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [projectMessage, setProjectMessage] = useState('');
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [planId, setPlanId] = useState('free');
+  const [usage, setUsage] = useState<{ used: number; limit: number } | null>(null);
   const [prompt, setPrompt] = useState('');
   const [result, setResult] = useState(initialResult);
 
@@ -185,10 +189,14 @@ function App() {
     });
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('登入狀態已失效，請重新登入。');
+
       const response = await fetch(`${API_BASE_URL}/api/agent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           message: prompt.trim(),
@@ -197,6 +205,9 @@ function App() {
         }),
       });
       const data = (await response.json()) as AgentResponse;
+
+      if (data.plan_id) setPlanId(data.plan_id);
+      if (data.usage) setUsage(data.usage);
 
       setResult({
         status: data.status ?? '',
@@ -417,6 +428,10 @@ function App() {
                 </div>
               </div>
               <div className="result-body">
+                <div className="usage-summary">
+                  <span>Current Plan: <strong>{planId}</strong></span>
+                  <span>AI Reports: <strong>{usage ? `${usage.used} / ${usage.limit}` : '尚未使用'}</strong></span>
+                </div>
                 <div className="result-row">
                   <span className="result-label">status</span>
                   <span className="result-value status-value">{result.status}</span>

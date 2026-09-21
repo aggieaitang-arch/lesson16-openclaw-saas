@@ -120,6 +120,8 @@ textarea::placeholder { color: #a7b8b1; }
 .result-status { background: #dcece1; border-radius: 99px; color: #52826e; font-family: 'DM Mono', monospace; font-size: 10px; gap: 5px; padding: 6px 9px; text-transform: lowercase; }
 .result-running .result-status { background: #f1ead8; color: #a07e43; }
 .result-body { padding: 8px 25px 15px; }
+.usage-summary { color: #5e7972; display: flex; font-family: 'DM Mono', monospace; font-size: 10px; gap: 16px; justify-content: space-between; padding: 12px 0 8px; }
+.usage-summary strong { color: #315c5b; font-weight: 500; }
 .result-row { align-items: center; border-bottom: 1px solid #e5eee9; display: grid; gap: 20px; grid-template-columns: 60px 1fr; min-height: 43px; }
 .result-row:last-child { border-bottom: 0; }
 .result-label { color: #a3b3ad; font-size: 10px; }
