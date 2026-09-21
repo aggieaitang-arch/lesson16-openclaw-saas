@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import {
   ArrowUpRight,
@@ -9,6 +9,7 @@ import {
   ClipboardList,
   Clock3,
   FileText,
+  FolderPlus,
   LoaderCircle,
   LogIn,
   LogOut,
@@ -32,6 +33,11 @@ type AgentResponse = {
   status?: string;
   reply?: string;
   error?: string;
+};
+
+type Project = {
+  id: string;
+  project_name: string;
 };
 
 type QuickAction = {
@@ -78,8 +84,36 @@ function App() {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [projectName, setProjectName] = useState('');
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
+  const [projectMessage, setProjectMessage] = useState('');
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [result, setResult] = useState(initialResult);
+
+  const loadProjects = async (): Promise<void> => {
+    setIsLoadingProjects(true);
+    const { data, error } = await supabase
+      .from('projects')
+      .select('id, project_name')
+      .order('created_at', { ascending: false });
+
+    setIsLoadingProjects(false);
+    if (error) {
+      setProjectMessage(error.message);
+      return;
+    }
+    setProjects((data ?? []) as Project[]);
+  };
+
+  useEffect(() => {
+    if (user) void loadProjects();
+    else {
+      setProjects([]);
+      setCurrentProject(null);
+    }
+  }, [user]);
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
@@ -108,6 +142,34 @@ function App() {
     setMessage('');
   };
 
+  const handleCreateProject = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
+    event.preventDefault();
+    if (!projectName.trim()) return;
+    setProjectMessage('');
+
+    const { data: { user: authenticatedUser } } = await supabase.auth.getUser();
+    if (!authenticatedUser) {
+      setProjectMessage('登入狀態已失效，請重新登入。');
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('projects')
+      .insert({ owner_id: authenticatedUser.id, project_name: projectName.trim() })
+      .select('id, project_name')
+      .single();
+
+    if (error) {
+      setProjectMessage(error.message);
+      return;
+    }
+
+    const project = data as Project;
+    setProjects((existingProjects) => [project, ...existingProjects]);
+    setCurrentProject(project);
+    setProjectName('');
+  };
+
   const handleQuickAction = (action: QuickAction): void => {
     setPrompt(action.prompt);
   };
@@ -128,7 +190,11 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: prompt.trim() }),
+        body: JSON.stringify({
+          message: prompt.trim(),
+          project_id: currentProject?.id,
+          project_name: currentProject?.project_name,
+        }),
       });
       const data = (await response.json()) as AgentResponse;
 
@@ -186,6 +252,45 @@ function App() {
     );
   }
 
+  if (!currentProject) {
+    return (
+      <main className="app-shell login-shell">
+        <div className="ambient ambient-one" />
+        <div className="ambient ambient-two" />
+        <section className="login-card project-picker">
+          <div className="brand-mark"><FolderPlus size={21} strokeWidth={2.2} /></div>
+          <span className="section-kicker">SITE OPS / PROJECTS</span>
+          <h1>選擇一個專案</h1>
+          <p>登入帳號：{user.email}</p>
+          <form onSubmit={handleCreateProject}>
+            <label className="input-label" htmlFor="project-name">新增 Project</label>
+            <div className="project-create-row">
+              <input
+                id="project-name"
+                value={projectName}
+                onChange={(event) => setProjectName(event.target.value)}
+                placeholder="例如：林宅客餐廳改造"
+                required
+              />
+              <button className="agent-button" type="submit">新增</button>
+            </div>
+          </form>
+          {projectMessage && <p className="login-message" role="alert">{projectMessage}</p>}
+          <div className="project-list">
+            {isLoadingProjects && <p>正在讀取 Projects…</p>}
+            {!isLoadingProjects && projects.length === 0 && <p>尚無 Project，請先新增一個。</p>}
+            {projects.map((project) => (
+              <button key={project.id} className="project-item" type="button" onClick={() => setCurrentProject(project)}>
+                <span>{project.project_name}</span><ChevronRight size={18} />
+              </button>
+            ))}
+          </div>
+          <button className="logout-button picker-logout" type="button" onClick={handleLogout}><LogOut size={14} /> 登出</button>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="app-shell">
       <div className="ambient ambient-one" />
@@ -214,14 +319,14 @@ function App() {
         <section className="hero-section">
           <div className="hero-copy">
             <div className="eyebrow"><span /> PROJECT CONTROL ROOM</div>
-            <h1>林宅客餐廳改造</h1>
+            <h1>{currentProject.project_name}</h1>
             <p>把現場資訊交給 AI，讓每一次巡檢與決策都更清楚。</p>
           </div>
           <div className="project-status">
             <div className="status-icon"><MapPin size={18} /></div>
             <div>
               <span>目前專案</span>
-              <strong>台北市・內湖區</strong>
+              <strong>{currentProject.project_name}</strong>
             </div>
             <ChevronRight size={17} className="status-arrow" />
           </div>
