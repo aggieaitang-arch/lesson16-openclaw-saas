@@ -15,7 +15,7 @@
 * { box-sizing: border-box; }
 
 body { margin: 0; min-width: 320px; }
-button, textarea { font: inherit; }
+button, input, textarea { font: inherit; }
 button { cursor: pointer; }
 
 .app-shell {
@@ -37,6 +37,8 @@ button { cursor: pointer; }
 .brand-caption, .section-kicker, .eyebrow, .topbar-meta, .date-label, .result-label, .footer-dot { font-family: 'DM Mono', monospace; }
 .brand-caption { color: #83a09a; font-size: 9px; letter-spacing: .12em; margin: 3px 0 0; }
 .topbar-meta { color: #76908b; font-size: 11px; gap: 9px; letter-spacing: .04em; }
+.logout-button { align-items: center; background: transparent; border: 0; color: #567a72; display: flex; font-size: 11px; gap: 5px; padding: 5px; }
+.logout-button:hover { color: #17484a; }
 .online-dot, .footer-dot { background: #75b58f; border-radius: 999px; height: 6px; width: 6px; }
 .meta-divider { background: #d3dfda; height: 14px; margin: 0 5px; width: 1px; }
 
@@ -91,6 +93,17 @@ textarea::placeholder { color: #a7b8b1; }
 .agent-button:disabled { background: #b4c5bd; cursor: not-allowed; }
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.login-shell { align-items: center; display: flex; justify-content: center; padding: 24px; }
+.login-card { background: rgba(255,255,255,.84); border: 1px solid #dae7e0; border-radius: 15px; box-shadow: 0 20px 50px rgba(43,80,70,.08); padding: 34px; position: relative; width: min(100%, 410px); }
+.login-card .brand-mark { margin: 0 0 24px; }
+.login-card h1 { font-size: 32px; letter-spacing: -.05em; margin: 0 0 10px; }
+.login-card > p { color: #6f8580; font-size: 13px; margin-bottom: 28px; }
+.login-card .input-label { margin-top: 16px; }
+.login-card input { background: #f7faf8; border: 1px solid #d9e6df; border-radius: 9px; color: #24494b; outline: none; padding: 12px 13px; width: 100%; }
+.login-card input:focus { border-color: #8ebba8; box-shadow: 0 0 0 3px rgba(142,187,168,.13); }
+.login-message { color: #a76b60 !important; margin: 15px 0 0 !important; }
+.login-button { justify-content: center; margin-top: 23px; width: 100%; }
 
 .result-panel { margin-top: 18px; overflow: hidden; }
 .result-header { align-items: flex-start; background: #edf4ef; display: flex; justify-content: space-between; padding: 22px 25px 19px; }

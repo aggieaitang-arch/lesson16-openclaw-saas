@@ -1,4 +1,5 @@
 import { FormEvent, useState } from 'react';
+import type { User } from '@supabase/supabase-js';
 import {
   ArrowUpRight,
   Bot,
@@ -9,6 +10,8 @@ import {
   Clock3,
   FileText,
   LoaderCircle,
+  LogIn,
+  LogOut,
   MapPin,
   MessageSquareText,
   ScanLine,
@@ -18,6 +21,7 @@ import {
   Zap,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { supabase } from './lib/supabase';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -69,8 +73,40 @@ const initialResult = {
 };
 
 function App() {
+  const [user, setUser] = useState<User | null>(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [message, setMessage] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [result, setResult] = useState(initialResult);
+
+  const handleLogin = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
+    event.preventDefault();
+    setMessage('');
+    setIsLoggingIn(true);
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    setIsLoggingIn(false);
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setUser(data.user);
+  };
+
+  const handleLogout = async (): Promise<void> => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setUser(null);
+    setMessage('');
+  };
 
   const handleQuickAction = (action: QuickAction): void => {
     setPrompt(action.prompt);
@@ -112,6 +148,44 @@ function App() {
 
   const isRunning = result.status === 'running';
 
+  if (!user) {
+    return (
+      <main className="app-shell login-shell">
+        <div className="ambient ambient-one" />
+        <div className="ambient ambient-two" />
+        <form className="login-card" onSubmit={handleLogin}>
+          <div className="brand-mark"><Bot size={21} strokeWidth={2.2} /></div>
+          <span className="section-kicker">SITE OPS / LOGIN</span>
+          <h1>登入工地作業台</h1>
+          <p>使用你的 Email 與密碼繼續。</p>
+          <label className="input-label" htmlFor="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            autoComplete="email"
+            required
+          />
+          <label className="input-label" htmlFor="password">密碼</label>
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            autoComplete="current-password"
+            required
+          />
+          {message && <p className="login-message" role="alert">{message}</p>}
+          <button className="agent-button login-button" type="submit" disabled={isLoggingIn}>
+            {isLoggingIn ? <LoaderCircle size={17} className="spin" /> : <LogIn size={17} />}
+            {isLoggingIn ? '登入中' : '登入'}
+          </button>
+        </form>
+      </main>
+    );
+  }
+
   return (
     <main className="app-shell">
       <div className="ambient ambient-one" />
@@ -130,7 +204,10 @@ function App() {
             <span className="online-dot" />
             <span>系統運作中</span>
             <span className="meta-divider" />
-            <span className="date-label">2024.06.18</span>
+            <span className="date-label">{user.email}</span>
+            <button className="logout-button" type="button" onClick={handleLogout}>
+              <LogOut size={14} /> 登出
+            </button>
           </div>
         </header>
 
